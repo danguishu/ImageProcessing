@@ -433,34 +433,33 @@ long	lLineBytes，DIB图像的行字节数，为4的倍数
 * 函数功能:该函数用来镜像DIB图像，本程序只实现了水平镜像，垂直镜像的原理书中也谈到。 很容易实现           
 ************************************************************************/
 
-BOOL  Mirror(LPSTR lpSrcStartBits, long lWidth, long lHeight,long lLineBytes)
+HGLOBAL  Mirror(LPSTR lpSrcStartBits, long lWidth, long lHeight,long lLineBytes, DWORD palSize, LPSTR lpSrcDib)
 {	
 	long i;                 //行循环变量
 	long j;                 //列循环变量
 	LPSTR	lpSrcDIBBits;	//指向源像素的指针
-	LPSTR	lpDstDIBBits;	//指向临时图像对应像素的指针 		
-	HLOCAL	hDstDIBBits;	//临时图像句柄
-	LPSTR	lpBits;	// 指向中间像素的指针，当复制图像时，提供临时的像素内存空间
-	hDstDIBBits= LocalAlloc(LHND, lLineBytes);// 分配临时内存保存行图像
-	if (hDstDIBBits == NULL)		
+	LPSTR	lpDstDib;		//指向临时图像的指针 		
+	LPSTR	lpDstStartBits; //指向临时图像像素起始位置的指针
+	LPSTR   lpDstDIBBits;	//指向临时图像像素的指针
+	HGLOBAL hDIB = (HGLOBAL) ::GlobalAlloc(GHND, lLineBytes * lHeight + *(LPDWORD)lpSrcDib + palSize);// 分配内存，以保存新DIB	
+	if (hDIB == NULL)
 	{		
 		return FALSE;									// 分配内存失败
 	}		
-	lpDstDIBBits= (char * )LocalLock(hDstDIBBits);// 锁定				
+	lpDstDib = (char * )LocalLock(hDIB);// 锁定
+	memcpy(lpDstDib, lpSrcDib, *(LPDWORD)lpSrcDib + palSize);// 复制DIB信息头和调色板
+	lpDstStartBits = lpDstDib + *(LPDWORD)lpDstDib+ palSize;// 求像素起始位置,作用如同::FindDIBBits(gCo.lpSrcDib)，这里尝试使用了这种方法，以避免对全局函数的调用
+
 	for(i = 0; i < lHeight; i++)// 水平镜像，针对图像每行进行操作
 	{			
-		for(j = 0; j < lWidth / 2; j++)// 针对每行图像左半部分进行操作
-		{							
-			lpSrcDIBBits= (char *)lpSrcStartBits + lLineBytes * i + j;// 指向倒数第i行，第j个像素的指针								
-			lpBits= (char *)lpSrcStartBits + lLineBytes * (i + 1) - j;// 指向倒数第i+1行，倒数第j个像素的指针								
-			*lpDstDIBBits=*lpBits;//保存中间像素								
-			*lpBits = *lpSrcDIBBits;// 将倒数第i行，第j个像素复制到倒数第i行，倒数第j个像素								
-			*lpSrcDIBBits=*lpDstDIBBits;// 将倒数第i行，倒数第j个像素复制到倒数第i行，第j个像素
+		for(j = 0; j < lWidth; j++)// 针对每行图像左半部分进行操作
+		{		
+			lpDstDIBBits = (char *)lpDstStartBits + lLineBytes * i + j;// 指向倒数第i行，第j个像素的指针
+			lpSrcDIBBits = (char *)lpSrcStartBits + lLineBytes * (i+1) - j;// 对称点	
+			*lpDstDIBBits = *lpSrcDIBBits;
 		}			
 	}		
-	LocalUnlock(hDstDIBBits);// 释放内存
-	LocalFree(hDstDIBBits);
-	return TRUE;
+	return hDIB;
 }
 
 
@@ -475,37 +474,36 @@ long	lLineBytes，DIB图像的行字节数，为4的倍数
 * 函数功能:该函数用来垂直镜像DIB图像         
 ************************************************************************/
 
-BOOL  Mirror2(LPSTR lpSrcStartBits, long lWidth, long lHeight,long lLineBytes)
+HGLOBAL  MirrorV(LPSTR lpSrcStartBits, long lWidth, long lHeight,long lLineBytes, DWORD palSize, LPSTR lpSrcDib)
 {	
 	long i;                 //行循环变量
 	long j;                 //列循环变量
 	LPSTR	lpSrcDIBBits;	//指向源像素的指针
 	LPSTR	lpDstDIBBits;	//指向临时图像对应像素的指针 		
-	HLOCAL	hDstDIBBits;	//临时图像句柄
-	LPSTR	lpBits;	// 指向中间像素的指针，当复制图像时，提供临时的像素内存空间
-	hDstDIBBits= LocalAlloc(LHND, lLineBytes);// 分配临时内存保存行图像
-	if (hDstDIBBits == NULL)		
+	LPSTR	lpDstStartBits;	// 指向临时图像像素开始的指针
+	LPSTR	lpDstDib;		//指向临时图像的指针 		
+	HGLOBAL hDIB = (HGLOBAL) ::GlobalAlloc(GHND, lLineBytes * lHeight + *(LPDWORD)lpSrcDib + palSize);// 分配内存，以保存新DIB	
+
+	if (hDIB == NULL)
 	{		
 		return FALSE;									// 分配内存失败
 	}		
-	lpDstDIBBits= (char * )LocalLock(hDstDIBBits);// 锁定				
-	for(i = 0; i < lHeight / 2; i++)// 垂直镜像，针对图像每行进行操作
-	{			
-		//for(j = 0; j < lWidth / 2; j++)// 针对每行图像左半部分进行操作
-		//{							
-		lpSrcDIBBits= (char *)lpSrcStartBits + lLineBytes * i ;//+ j;// 指向倒数第i行，第j个像素的指针								
-		lpBits= (char *)lpSrcStartBits + lLineBytes * (lHeight - i + 1);// - j;// 指向倒数第i+1行，倒数第j个像素的指针								
-		memcpy(lpDstDIBBits, lpBits, lLineBytes);
-		memcpy(lpBits, lpSrcDIBBits, lLineBytes);
-		memcpy(lpSrcDIBBits, lpDstDIBBits, lLineBytes);
-		//*lpDstDIBBits=*lpBits;//保存中间像素								
-		//*lpBits = *lpSrcDIBBits;// 将倒数第i行，第j个像素复制到倒数第i行，倒数第j个像素								
-		//*lpSrcDIBBits=*lpDstDIBBits;// 将倒数第i行，倒数第j个像素复制到倒数第i行，第j个像素
-		//}			
-	}		
-	LocalUnlock(hDstDIBBits);// 释放内存
-	LocalFree(hDstDIBBits);
-	return TRUE;
+	lpDstDib = (char * )LocalLock(hDIB);// 锁定	
+
+	memcpy(lpDstDib, lpSrcDib, *(LPDWORD)lpSrcDib + palSize);// 复制DIB信息头和调色板
+	lpDstStartBits = lpDstDib + *(LPDWORD)lpDstDib + palSize;// 求像素起始位置,作用如同::FindDIBBits(gCo.lpSrcDib)，这里尝试使用了这种方法，以避免对全局函数的调用
+
+	for (i = 0; i < lHeight; i++)
+	{
+		for (j = 0; j < lWidth; j++)
+		{
+			lpDstDIBBits = (char *)lpDstStartBits + lLineBytes * i + j;// 指向倒数第i行，第j个像素的指针
+			lpSrcDIBBits = (char *)lpSrcStartBits + lLineBytes * (lHeight-i-1) +j;// 对称点	
+			*lpDstDIBBits = *lpSrcDIBBits;
+		}
+	}
+	
+	return hDIB;
 }
 
 /*************************************************************************
@@ -519,11 +517,11 @@ long lYOffset,long lLineBytes,long lDstLineBytes)
 * 	 long	lYOffset,Y方向偏移量
 * 	 long	lLineBytes，DIB图像的行字节数，为4的倍数
 * 	 long	lDstLineBytes，临时DIB图像的行字节数，为4的倍数
-* 函数类型:BOOL        
+* 函数类型:HGLOBAL        
 * 函数功能:该函数用来平移DIB图像
 ************************************************************************/
-BOOL  Translation(LPSTR lpSrcStartBits, long lWidth, long lHeight, 
-				  long lXOffset, long lYOffset,long lLineBytes,long lDstLineBytes)					 
+HGLOBAL  Translation(LPSTR lpSrcStartBits, long lWidth, long lHeight,
+				  long lXOffset, long lYOffset,long lLineBytes,long lDstLineBytes, DWORD palSize, LPSTR lpSrcDib)
 {	
 	long i;                 //行循环变量
 	long j;                 //列循环变量
@@ -531,34 +529,39 @@ BOOL  Translation(LPSTR lpSrcStartBits, long lWidth, long lHeight,
 	LPSTR	lpDstDIBBits;	//指向临时图像对应像素的指针
 	LPSTR	lpDstStartBits;	//指向临时图像对应像素的指针 		
 	HLOCAL	hDstDIBBits;	//临时图像句柄
+	LPSTR	lpDstDib;		//指向临时图像的指针
 
-	hDstDIBBits= LocalAlloc(LHND, lWidth * lDstLineBytes);// 分配临时内存
-	lpDstStartBits= (char * )LocalLock(hDstDIBBits);// 锁定内存	
-	if (hDstDIBBits== NULL)// 判断是否内存分配		
-		return FALSE;// 分配内存失败				
-	for(i = 0; i < lHeight; i++)// 行
+	HGLOBAL hDIB = (HGLOBAL) ::GlobalAlloc(GHND, lLineBytes * lHeight + *(LPDWORD)lpSrcDib + palSize);// 分配内存，以保存新DIB		
+	if (hDIB == NULL)// 判断是否是有效的DIB对象
 	{
-		for(j = 0; j < lWidth; j++)	// 列
+		return FALSE;// 不是，则返回
+	}
+	lpDstDib = (char *)::GlobalLock((HGLOBAL)hDIB);// 锁定内存		
+	memcpy(lpDstDib, lpSrcDib, *(LPDWORD)lpSrcDib + palSize);// 复制DIB信息头和调色板		
+
+	lpDstStartBits = lpDstDib + *(LPDWORD)lpDstDib
+		+ palSize;// 求像素起始位置,作用如同::FindDIBBits(gCo.lpSrcDib)，这里尝试使用了这种方法，以避免对全局函数的调用
+
+	for (i = 0; i < lHeight; i++)// 行
+	{
+		for (j = 0; j < lWidth; j++)	// 列
 		{
-			lpDstDIBBits=(char*)lpDstStartBits+lLineBytes*(lHeight-1-i)
-				+j;// 指向新DIB第i行，第j个像素的指针												
-			if( (j-lYOffset>= 0) && (j-lYOffset< lWidth) && // 像素在源DIB中的坐标j-lXOffset
-				(i-lXOffset>= 0) && (i-lXOffset < lHeight))// 判断是否在源图范围内
+			lpDstDIBBits = (char*)lpDstStartBits + lLineBytes*(lHeight - 1 - i)
+				+ j;// 指向新DIB第i行，第j个像素的指针												
+			if ((j - lYOffset >= 0) && (j - lYOffset < lWidth) && // 像素在源DIB中的坐标j-lXOffset
+				(i - lXOffset >= 0) && (i - lXOffset < lHeight))// 判断是否在源图范围内
 			{
-				lpSrcDIBBits=(char *)lpSrcStartBits+lLineBytes*(lHeight-1-
-					(i-lXOffset))+(j-lYOffset);// 指向源DIB第i0行，第j0个像素的指针								
-				*lpDstDIBBits= *lpSrcDIBBits;// 复制像素
+				lpSrcDIBBits = (char *)lpSrcStartBits + lLineBytes*(lHeight - 1 -
+					(i - lXOffset)) + (j - lYOffset);// 指向源DIB第i0行，第j0个像素的指针								
+				*lpDstDIBBits = *lpSrcDIBBits;// 复制像素
 			}
 			else
-			{				
-				* ((unsigned char*)lpDstDIBBits) = 255;// 源图中没有的像素，赋为255
-			}			
+			{
+				*((unsigned char*)lpDstDIBBits) = 0;// 源图中没有的像素，赋为255
+			}
 		}
 	}
-	memcpy(lpSrcStartBits, lpDstStartBits, lLineBytes * lHeight);// 复制图像		
-	LocalUnlock(hDstDIBBits);// 释放内存
-	LocalFree(hDstDIBBits);		
-	return TRUE;
+	return hDIB;
 }
 
 /*************************************************************************

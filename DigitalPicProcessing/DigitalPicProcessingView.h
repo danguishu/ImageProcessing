@@ -51,6 +51,8 @@ public:
 	afx_msg void OnRotate();
 	afx_msg void OnTranslation();
 	afx_msg void OnFileOpen();
+	afx_msg void OnMirrorH();
+	afx_msg void OnMirrorV();
 };
 
 #ifndef _DEBUG  // DigitalPicProcessingView.cpp 中的调试版本

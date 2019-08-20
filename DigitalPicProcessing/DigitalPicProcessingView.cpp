@@ -13,6 +13,7 @@
 #include "DigitalPicProcessingView.h"
 #include "function.h"
 #include "DlgRotate.h"
+#include "DlgTranslation.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -31,6 +32,8 @@ BEGIN_MESSAGE_MAP(CDigitalPicProcessingView, CView)
 	ON_COMMAND(ID_32772, &CDigitalPicProcessingView::OnRotate)
 	ON_COMMAND(ID_32771, &CDigitalPicProcessingView::OnTranslation)
 	ON_COMMAND(ID_FILE_OPEN, &CDigitalPicProcessingView::OnFileOpen)
+	ON_COMMAND(ID_32774, &CDigitalPicProcessingView::OnMirrorH)
+	ON_COMMAND(ID_32775, &CDigitalPicProcessingView::OnMirrorV)
 END_MESSAGE_MAP()
 
 // CDigitalPicProcessingView 构造/析构
@@ -251,7 +254,49 @@ void CDigitalPicProcessingView::OnRotate()
 
 void CDigitalPicProcessingView::OnTranslation()
 {
-	// TODO: 在此添加命令处理程序代码
+	//判断图片是否加载
+	if (m_hDIB == NULL)
+	{
+		MessageBox(L"请选择图片");
+		return;
+	}
+	long lSrcLineBytes;						//图像每行的字节数
+	long lSrcWidth;							//图像的宽度
+	long lSrcHeight;						//图像的高度
+	LPSTR lpSrcDib;							//指向源图像的指针
+	LPSTR lpSrcStartBits;					//指向原像素的指针
+	long lDstLineBytes;						//新图像每行的字节数
+	lpSrcDib = (LPSTR) ::GlobalLock(m_hDIB);//锁住DIB
+	if (m_dib.GetColorNum(lpSrcDib) != 256)
+	{
+		AfxMessageBox(_T("对不起，不是色位图！"));                // 警告
+		::GlobalUnlock((HGLOBAL)m_hDIB);						// 解除锁定
+		return;													//返回
+	}
+	lpSrcStartBits = m_dib.GetBits(lpSrcDib);
+	lSrcWidth = m_dib.GetWidth(lpSrcDib);
+	lSrcHeight = m_dib.GetHeight(lpSrcDib);
+	lSrcLineBytes = m_dib.GetReqByteWidth(lSrcWidth * 8);
+	lDstLineBytes = m_dib.GetReqByteWidth(lSrcHeight * 8);
+	DWORD palSize = m_dib.GetPalSize(lpSrcDib);
+	CDlgTranslation tranPara;
+	if (tranPara.DoModal() != IDOK)
+		return;
+	int transH = tranPara.m_transH;
+	int transV = tranPara.m_transV;
+	BeginWaitCursor();
+	m_hDIBAfter = (HGLOBAL)Translation(lpSrcStartBits, lSrcWidth, lSrcHeight, transH, transV, lSrcLineBytes, lDstLineBytes, palSize, lpSrcDib);
+	if (m_hDIBAfter != NULL)
+	{
+		SetDib(m_hDIBAfter, m_palDIBAfter);				           // 更新DIB大小和调色板		
+		Invalidate();
+	}
+	else
+	{
+		AfxMessageBox(_T("分配内存失败！"));
+	}
+	::GlobalUnlock((HGLOBAL)m_hDIB);  // 解除锁定
+	EndWaitCursor();
 }
 
 
@@ -302,4 +347,74 @@ void CDigitalPicProcessingView::OnFileOpen()
 
 		Invalidate();
 	}
+}
+
+
+void CDigitalPicProcessingView::OnMirrorH()
+{
+	long lSrcLineBytes;						//图像每行的字节数
+	long lSrcWidth;
+	long lSrcHeight;
+	LPSTR lpSrcDib;
+	LPSTR lpSrcStartBits;
+	lpSrcDib = (LPSTR)::GlobalLock(m_hDIB);
+	if (m_hDIB == NULL)
+	{
+		MessageBox(L"请选择图片");
+		return;
+	}
+	lpSrcStartBits = m_dib.GetBits(lpSrcDib);
+	lSrcWidth = m_dib.GetWidth(lpSrcDib);
+	lSrcHeight = m_dib.GetHeight(lpSrcDib);
+	lSrcLineBytes = m_dib.GetReqByteWidth(lSrcWidth * 8);
+	DWORD palSize = m_dib.GetPalSize(lpSrcDib);
+
+	BeginWaitCursor();
+	m_hDIBAfter = Mirror(lpSrcStartBits, lSrcWidth, lSrcHeight, lSrcLineBytes, palSize, lpSrcDib);
+	if (m_hDIBAfter != NULL)
+	{
+		SetDib(m_hDIBAfter, m_palDIBAfter);				           // 更新DIB大小和调色板		
+		Invalidate();
+	}
+	else
+	{
+		AfxMessageBox(_T("分配内存失败！"));
+	}
+	::GlobalUnlock((HGLOBAL)m_hDIB);  // 解除锁定
+	EndWaitCursor();
+}
+
+
+void CDigitalPicProcessingView::OnMirrorV()
+{
+	long lSrcLineBytes;						//图像每行的字节数
+	long lSrcWidth;
+	long lSrcHeight;
+	LPSTR lpSrcDib;
+	LPSTR lpSrcStartBits;
+	lpSrcDib = (LPSTR)::GlobalLock(m_hDIB);
+	if (m_hDIB == NULL)
+	{
+		MessageBox(L"请选择图片");
+		return;
+	}
+	lpSrcStartBits = m_dib.GetBits(lpSrcDib);
+	lSrcWidth = m_dib.GetWidth(lpSrcDib);
+	lSrcHeight = m_dib.GetHeight(lpSrcDib);
+	lSrcLineBytes = m_dib.GetReqByteWidth(lSrcWidth * 8);
+	DWORD palSize = m_dib.GetPalSize(lpSrcDib);
+
+	BeginWaitCursor();
+	m_hDIBAfter = MirrorV(lpSrcStartBits, lSrcWidth, lSrcHeight, lSrcLineBytes, palSize, lpSrcDib);
+	if (m_hDIBAfter != NULL)
+	{
+		SetDib(m_hDIBAfter, m_palDIBAfter);				           // 更新DIB大小和调色板		
+		Invalidate();
+	}
+	else
+	{
+		AfxMessageBox(_T("分配内存失败！"));
+	}
+	::GlobalUnlock((HGLOBAL)m_hDIB);  // 解除锁定
+	EndWaitCursor();
 }

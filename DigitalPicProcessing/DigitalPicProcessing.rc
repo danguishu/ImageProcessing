@@ -118,14 +118,19 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "退出(&X)",                      ID_APP_EXIT
     END
+    POPUP "图像几何变换"
+    BEGIN
+        MENUITEM "图像平移",                        ID_32771
+        MENUITEM "图像旋转",                        ID_32772
+        POPUP "图像镜像"
+        BEGIN
+            MENUITEM "水平镜像",                        ID_32774
+            MENUITEM "垂直镜像",                        ID_32775
+        END
+    END
     POPUP "帮助(&H)"
     BEGIN
         MENUITEM "关于 DigitalPicProcessing(&A)...", ID_APP_ABOUT
-    END
-    POPUP "图像几何变换"
-    BEGIN
-        MENUITEM "图像旋转",                        ID_32772
-        MENUITEM "图像平移",                        ID_32771
     END
 END
 
