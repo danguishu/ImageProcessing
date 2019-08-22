@@ -1,7 +1,9 @@
 ﻿  DigitalPicProcessingView.cpp
-f:\imageprocessing\branches\dip_20190819\digitalpicprocessing\function.h(531): warning C4101: “hDstDIBBits”: 未引用的局部变量
-f:\imageprocessing\branches\dip_20190819\digitalpicprocessing\function.h(1230): warning C4244: “=”: 从“double”转换到“LONG”，可能丢失数据
-f:\imageprocessing\branches\dip_20190819\digitalpicprocessing\function.h(1231): warning C4244: “=”: 从“double”转换到“LONG”，可能丢失数据
-f:\imageprocessing\branches\dip_20190819\digitalpicprocessing\digitalpicprocessingview.cpp(238): warning C4244: “参数”: 从“DWORD”转换到“WORD”，可能丢失数据
+f:\imageprocessing\branches\dip_20190819\digitalpicprocessing\function.h(400): warning C4101: “lpbmc”: 未引用的局部变量
+f:\imageprocessing\branches\dip_20190819\digitalpicprocessing\function.h(533): warning C4101: “hDstDIBBits”: 未引用的局部变量
+f:\imageprocessing\branches\dip_20190819\digitalpicprocessing\function.h(1232): warning C4244: “=”: 从“double”转换到“LONG”，可能丢失数据
+f:\imageprocessing\branches\dip_20190819\digitalpicprocessing\function.h(1233): warning C4244: “=”: 从“double”转换到“LONG”，可能丢失数据
+f:\imageprocessing\branches\dip_20190819\digitalpicprocessing\digitalpicprocessingview.cpp(241): warning C4244: “参数”: 从“DWORD”转换到“WORD”，可能丢失数据
+f:\imageprocessing\branches\dip_20190819\digitalpicprocessing\digitalpicprocessingview.cpp(524): warning C4244: “参数”: 从“DWORD”转换到“WORD”，可能丢失数据
   DigitalPicProcessing.vcxproj -> F:\ImageProcessing\branches\DIP_20190819\Debug\DigitalPicProcessing.exe
   DigitalPicProcessing.vcxproj -> F:\ImageProcessing\branches\DIP_20190819\Debug\DigitalPicProcessing.pdb (Partial PDB)

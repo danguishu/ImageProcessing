@@ -120,12 +120,20 @@ BEGIN
     END
     POPUP "图像几何变换"
     BEGIN
-        MENUITEM "图像平移",                        ID_32771
-        MENUITEM "图像旋转",                        ID_32772
-        POPUP "图像镜像"
+        POPUP "图像位置变换"
         BEGIN
-            MENUITEM "水平镜像",                        ID_32774
-            MENUITEM "垂直镜像",                        ID_32775
+            MENUITEM "图像平移",                        ID_32771
+            MENUITEM "图像旋转",                        ID_32772
+            POPUP "图像镜像"
+            BEGIN
+                MENUITEM "水平镜像",                        ID_32774
+                MENUITEM "垂直镜像",                        ID_32775
+            END
+            MENUITEM "图像转置",                        ID_32776
+        END
+        POPUP "图像尺度变换"
+        BEGIN
+            MENUITEM "图像缩放",                        ID_32778
         END
     END
     POPUP "帮助(&H)"
@@ -200,6 +208,20 @@ BEGIN
     LTEXT           "旋转角度:",IDC_STATIC,111,64,36,8
 END
 
+IDD_DLG_ZOOM DIALOGEX 0, 0, 309, 176
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "参数设置"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "确定",IDOK,102,142,50,14
+    PUSHBUTTON      "取消",IDCANCEL,156,142,50,14
+    GROUPBOX        "缩放参数设置",IDC_STATIC,65,28,178,99
+    LTEXT           "水平缩放:",IDC_STATIC,105,60,36,8
+    EDITTEXT        IDC_EDIT1,164,58,40,14,ES_AUTOHSCROLL
+    LTEXT           "垂直缩放:",IDC_STATIC,105,89,36,8
+    EDITTEXT        IDC_EDIT2,164,87,40,14,ES_AUTOHSCROLL
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -271,6 +293,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 169
     END
+
+    IDD_DLG_ZOOM, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 302
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 169
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -286,6 +316,11 @@ BEGIN
 END
 
 IDD_DLG_ROTATE AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_DLG_ZOOM AFX_DIALOG_LAYOUT
 BEGIN
     0
 END

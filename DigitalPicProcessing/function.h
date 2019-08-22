@@ -387,23 +387,31 @@ long	lDstLineBytes，临时DIB图像的行字节数，为4的倍数
 * 函数功能:该函数用来转置DIB图像
 ************************************************************************/
 
-BOOL  Transpose(LPSTR lpSrcDib,LPSTR lpSrcStartBits,long lWidth,long lHeight,
-				long lLineBytes,long lDstLineBytes)
+HGLOBAL  Transpose(LPSTR lpSrcDib,LPSTR lpSrcStartBits,long lWidth,long lHeight,
+				long lLineBytes,long lDstLineBytes,DWORD palSize)
 {
 	long i;                 //行循环变量
 	long j;                 //列循环变量
 	LPSTR	lpSrcDIBBits;	//指向源像素的指针
 	LPSTR	lpDstDIBBits;	//指向临时图像对应像素的指针
-	LPSTR	lpDstStartBits;	//指向临时图像对应像素的指针 		
-	HLOCAL	hDstDIBBits;	//临时图像句柄
+	LPSTR	lpDstStartBits;	//指向临时图像对应像素的指针 
+	LPSTR   lpDstDib;		//指向临时图像的DIB
 	LPBITMAPINFOHEADER lpbmi;							  // 指向BITMAPINFOHEADER结构的指针
-	lpbmi = (LPBITMAPINFOHEADER)lpSrcDib;
-	hDstDIBBits= LocalAlloc(LHND, lWidth * lDstLineBytes);// 分配临时内存
-	if (hDstDIBBits== NULL)								 // 判断是否内存分配
-	{		
+	LPBITMAPCOREHEADER lpbmc;
+	HGLOBAL hDIB = (HGLOBAL) ::GlobalAlloc(GHND, lDstLineBytes * lLineBytes + *(LPDWORD)lpSrcDib + palSize);// 分配内存，以保存新DIB
+	if (hDIB == NULL)								 // 判断是否内存分配
+	{
 		return FALSE;									// 分配内存失败
-	}	
-	lpDstStartBits= (char * )LocalLock(hDstDIBBits);	// 锁定内存		
+	}
+	lpDstDib = (char * )LocalLock(hDIB);	// 锁定内存		
+	memcpy(lpDstDib, lpSrcDib, *(LPDWORD)lpSrcDib + palSize);// 复制DIB信息头和调色板	
+	lpbmi = (LPBITMAPINFOHEADER)lpDstDib;
+	lpbmi->biWidth = lHeight;
+	lpbmi->biHeight = lWidth;
+
+
+	lpDstStartBits = lpDstDib + *(LPDWORD)lpDstDib+ palSize;// 求像素起始位置,作用如同::FindDIBBits(gCo.lpSrcDib)
+
 	for(i = 0; i < lHeight; i++)						// 针对图像每行进行操作
 	{		
 		for(j = 0; j < lWidth; j++)						// 针对每行图像每列进行操作
@@ -413,13 +421,7 @@ BOOL  Transpose(LPSTR lpSrcDib,LPSTR lpSrcStartBits,long lWidth,long lHeight,
 			*(lpDstDIBBits)= *(lpSrcDIBBits);			// 复制像素			
 		}		
 	}	
-	memcpy(lpSrcStartBits, lpDstStartBits, lWidth * lDstLineBytes);// 复制转置后的图像
-	lpbmi->biWidth = lHeight;		
-	lpbmi->biHeight = lWidth;
-
-	LocalUnlock(hDstDIBBits);							// 释放内存
-	LocalFree(hDstDIBBits);								
-	return TRUE;										// 返回
+	return hDIB;										// 返回
 }
 
 /*************************************************************************

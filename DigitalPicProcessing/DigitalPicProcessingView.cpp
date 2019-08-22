@@ -14,6 +14,7 @@
 #include "function.h"
 #include "DlgRotate.h"
 #include "DlgTranslation.h"
+#include "DlgZoom.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -34,6 +35,8 @@ BEGIN_MESSAGE_MAP(CDigitalPicProcessingView, CView)
 	ON_COMMAND(ID_FILE_OPEN, &CDigitalPicProcessingView::OnFileOpen)
 	ON_COMMAND(ID_32774, &CDigitalPicProcessingView::OnMirrorH)
 	ON_COMMAND(ID_32775, &CDigitalPicProcessingView::OnMirrorV)
+	ON_COMMAND(ID_32776, &CDigitalPicProcessingView::OnTranspose)
+	ON_COMMAND(ID_32778, &CDigitalPicProcessingView::OnZoom)
 END_MESSAGE_MAP()
 
 // CDigitalPicProcessingView 构造/析构
@@ -235,7 +238,7 @@ void CDigitalPicProcessingView::OnRotate()
 
 	BeginWaitCursor();
 
-	m_hDIBAfter = (HGLOBAL)RotateDIB2(lpSrcDib, fRotateAngle, lpSrcStartBits, lSrcWidth, lSrcHeight, palSize);
+	m_hDIBAfter = (HGLOBAL)Rotate(lpSrcDib, fRotateAngle, lpSrcStartBits, lSrcWidth, lSrcHeight, palSize);
 
 	if (m_hDIBAfter != NULL)
 	{
@@ -352,16 +355,22 @@ void CDigitalPicProcessingView::OnFileOpen()
 
 void CDigitalPicProcessingView::OnMirrorH()
 {
+	if (m_hDIB == NULL)
+	{
+		MessageBox(L"请选择图片");
+		return;
+	}
 	long lSrcLineBytes;						//图像每行的字节数
 	long lSrcWidth;
 	long lSrcHeight;
 	LPSTR lpSrcDib;
 	LPSTR lpSrcStartBits;
 	lpSrcDib = (LPSTR)::GlobalLock(m_hDIB);
-	if (m_hDIB == NULL)
+	if (m_dib.GetColorNum(lpSrcDib) != 256)
 	{
-		MessageBox(L"请选择图片");
-		return;
+		AfxMessageBox(_T("对不起，不是色位图！"));                // 警告
+		::GlobalUnlock((HGLOBAL)m_hDIB);						// 解除锁定
+		return;													//返回
 	}
 	lpSrcStartBits = m_dib.GetBits(lpSrcDib);
 	lSrcWidth = m_dib.GetWidth(lpSrcDib);
@@ -387,16 +396,22 @@ void CDigitalPicProcessingView::OnMirrorH()
 
 void CDigitalPicProcessingView::OnMirrorV()
 {
+	if (m_hDIB == NULL)
+	{
+		MessageBox(L"请选择图片");
+		return;
+	}
 	long lSrcLineBytes;						//图像每行的字节数
 	long lSrcWidth;
 	long lSrcHeight;
 	LPSTR lpSrcDib;
 	LPSTR lpSrcStartBits;
 	lpSrcDib = (LPSTR)::GlobalLock(m_hDIB);
-	if (m_hDIB == NULL)
+	if (m_dib.GetColorNum(lpSrcDib) != 256)
 	{
-		MessageBox(L"请选择图片");
-		return;
+		AfxMessageBox(_T("对不起，不是色位图！"));                // 警告
+		::GlobalUnlock((HGLOBAL)m_hDIB);						// 解除锁定
+		return;													//返回
 	}
 	lpSrcStartBits = m_dib.GetBits(lpSrcDib);
 	lSrcWidth = m_dib.GetWidth(lpSrcDib);
@@ -407,6 +422,108 @@ void CDigitalPicProcessingView::OnMirrorV()
 	BeginWaitCursor();
 	m_hDIBAfter = MirrorV(lpSrcStartBits, lSrcWidth, lSrcHeight, lSrcLineBytes, palSize, lpSrcDib);
 	if (m_hDIBAfter != NULL)
+	{
+		SetDib(m_hDIBAfter, m_palDIBAfter);				           // 更新DIB大小和调色板		
+		Invalidate();
+	}
+	else
+	{
+		AfxMessageBox(_T("分配内存失败！"));
+	}
+	::GlobalUnlock((HGLOBAL)m_hDIB);  // 解除锁定
+	EndWaitCursor();
+}
+
+
+void CDigitalPicProcessingView::OnTranspose()
+{
+	if (m_hDIB == NULL)
+	{
+		MessageBox(L"请选择图片");
+		return;
+	}
+	long lSrcLineBytes;						//图像每行的字节数
+	long lDstLineBytes;
+	long lSrcWidth;
+	long lSrcHeight;
+	LPSTR lpSrcDib;
+	LPSTR lpSrcStartBits;
+	lpSrcDib = (LPSTR)::GlobalLock(m_hDIB);
+	if (m_dib.GetColorNum(lpSrcDib) != 256)
+	{
+		AfxMessageBox(_T("对不起，不是色位图！"));                // 警告
+		::GlobalUnlock((HGLOBAL)m_hDIB);						// 解除锁定
+		return;													//返回
+	}
+	lpSrcStartBits = m_dib.GetBits(lpSrcDib);
+	lSrcWidth = m_dib.GetWidth(lpSrcDib);
+	lSrcHeight = m_dib.GetHeight(lpSrcDib);
+	lSrcLineBytes = m_dib.GetReqByteWidth(lSrcWidth * 8);
+	lDstLineBytes = m_dib.GetReqByteWidth(lSrcHeight * 8);
+	DWORD palSize = m_dib.GetPalSize(lpSrcDib);
+
+
+	BeginWaitCursor();
+	m_hDIBAfter = Transpose(lpSrcDib,lpSrcStartBits, lSrcWidth, lSrcHeight, lSrcLineBytes, lDstLineBytes,palSize);
+	if (m_hDIBAfter != NULL)
+	{
+		SetDib(m_hDIBAfter, m_palDIBAfter);				           // 更新DIB大小和调色板		
+		Invalidate();
+	}
+	else
+	{
+		AfxMessageBox(_T("分配内存失败！"));
+	}
+	::GlobalUnlock((HGLOBAL)m_hDIB);  // 解除锁定
+	EndWaitCursor();
+}
+
+
+void CDigitalPicProcessingView::OnZoom()
+{
+	if (m_hDIB == NULL)
+	{
+		MessageBox(L"请选择图片");
+		return;
+	}
+	long	lSrcLineBytes;	//图像每行的字节数
+	long	lSrcWidth;      //图像的宽度
+	long	lSrcHeight;		//图像的高度
+	LPSTR	lpSrcDib;		//指向源图像的指针	
+	LPSTR	lpSrcStartBits;	//指向源像素的指针
+	long	lDstWidth;      //临时图像的宽度
+	long	lDstHeight;		//临时图像的高度
+	long	lDstLineBytes;	//临时图像每行的字节数
+
+	lpSrcDib =(LPSTR)::GlobalLock(m_hDIB);
+	if (m_dib.GetColorNum(lpSrcDib) != 256)
+	{
+		AfxMessageBox(_T("对不起，不是色位图！"));                // 警告
+		::GlobalUnlock((HGLOBAL)m_hDIB);						// 解除锁定
+		return;													//返回
+	}
+	lpSrcStartBits = m_dib.GetBits(lpSrcDib);			// 找到DIB图像像素起始位置	
+	lSrcWidth = m_dib.GetWidth(lpSrcDib);					// 获取图像的宽度		
+	lSrcHeight = m_dib.GetHeight(lpSrcDib);					// 获取图像的高度		
+	lSrcLineBytes = m_dib.GetReqByteWidth(lSrcWidth * 8);		// 计算图像每行的字节数
+	DWORD palSize = m_dib.GetPalSize(lpSrcDib);
+
+	CDlgZoom dlg;
+	if (dlg.DoModal() != IDOK)
+		return;
+	float fX = dlg.m_zoomH;// 获取设定的缩放比率
+	float fY = dlg.m_zoomV;
+
+	lDstWidth = (long)(lSrcWidth*fX + 0.5);// 计算缩放后的图像实际宽度,加0.5是由于强制类型转换时不四舍五入，而是直接截去小数部分
+	lDstLineBytes = m_dib.GetReqByteWidth(lDstWidth * 8);	//转换后图像应有的行字节数，为4的倍数
+	lDstHeight = (long)(lSrcHeight * fY + 0.5);// 计算缩放后的图像高度
+
+	BeginWaitCursor();
+
+	m_hDIBAfter = (HGLOBAL)Zoom(lpSrcDib, lpSrcStartBits, lSrcWidth, lSrcHeight,
+		lSrcLineBytes, palSize, lDstWidth, lDstLineBytes, lDstHeight, fX, fY);// 调用Zoom()函数转置DIB		
+
+	if (m_hDIBAfter != NULL)// 判断旋转是否成功
 	{
 		SetDib(m_hDIBAfter, m_palDIBAfter);				           // 更新DIB大小和调色板		
 		Invalidate();

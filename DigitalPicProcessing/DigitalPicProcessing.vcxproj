@@ -191,6 +191,7 @@
     <ClInclude Include="DigitalPicProcessingView.h" />
     <ClInclude Include="DlgRotate.h" />
     <ClInclude Include="DlgTranslation.h" />
+    <ClInclude Include="DlgZoom.h" />
     <ClInclude Include="function.h" />
     <ClInclude Include="MainFrm.h" />
     <ClInclude Include="Resource.h" />
@@ -204,6 +205,7 @@
     <ClCompile Include="DigitalPicProcessingView.cpp" />
     <ClCompile Include="DlgRotate.cpp" />
     <ClCompile Include="DlgTranslation.cpp" />
+    <ClCompile Include="DlgZoom.cpp" />
     <ClCompile Include="MainFrm.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

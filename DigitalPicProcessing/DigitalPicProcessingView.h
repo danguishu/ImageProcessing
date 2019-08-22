@@ -53,6 +53,8 @@ public:
 	afx_msg void OnFileOpen();
 	afx_msg void OnMirrorH();
 	afx_msg void OnMirrorV();
+	afx_msg void OnTranspose();
+	afx_msg void OnZoom();
 };
 
 #ifndef _DEBUG  // DigitalPicProcessingView.cpp 中的调试版本

@@ -51,6 +51,9 @@
     <ClInclude Include="function.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="DlgZoom.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DigitalPicProcessing.cpp">
@@ -75,6 +78,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="DlgRotate.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgZoom.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
