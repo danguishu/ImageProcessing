@@ -37,6 +37,8 @@ BEGIN_MESSAGE_MAP(CDigitalPicProcessingView, CView)
 	ON_COMMAND(ID_32775, &CDigitalPicProcessingView::OnMirrorV)
 	ON_COMMAND(ID_32776, &CDigitalPicProcessingView::OnTranspose)
 	ON_COMMAND(ID_32778, &CDigitalPicProcessingView::OnZoom)
+	ON_COMMAND(ID_32780, &CDigitalPicProcessingView::OnFourier)
+	ON_COMMAND(ID_32782, &CDigitalPicProcessingView::OnCosTran)
 END_MESSAGE_MAP()
 
 // CDigitalPicProcessingView 构造/析构
@@ -238,7 +240,7 @@ void CDigitalPicProcessingView::OnRotate()
 
 	BeginWaitCursor();
 
-	m_hDIBAfter = (HGLOBAL)Rotate(lpSrcDib, fRotateAngle, lpSrcStartBits, lSrcWidth, lSrcHeight, palSize);
+	m_hDIBAfter = (HGLOBAL)RotateDIB2(lpSrcDib, fRotateAngle, lpSrcStartBits, lSrcWidth, lSrcHeight, palSize);
 
 	if (m_hDIBAfter != NULL)
 	{
@@ -534,4 +536,114 @@ void CDigitalPicProcessingView::OnZoom()
 	}
 	::GlobalUnlock((HGLOBAL)m_hDIB);  // 解除锁定
 	EndWaitCursor();
+}
+
+
+void CDigitalPicProcessingView::OnFourier()
+{
+	if (m_hDIB == NULL)
+	{
+		MessageBox(L"请选择图片");
+		return;
+	}
+	long lSrcLineBytes;		//图像每行的字节数
+	long	lSrcWidth;      //图像的宽度和高度
+	long	lSrcHeight;
+	LPSTR	lpSrcDib;		//指向源图像的指针	
+	LPSTR	lpSrcStartBits;	//指向源像素的指针
+	lpSrcDib = (LPSTR)::GlobalLock(m_hDIB);
+	if (m_dib.GetColorNum(lpSrcDib) != 256)
+	{
+		AfxMessageBox(_T("对不起，不是色位图！"));              // 警告
+		::GlobalUnlock((HGLOBAL)m_hDIB);						// 解除锁定
+		return;													//返回
+	}
+	BeginWaitCursor();
+
+	lpSrcStartBits = m_dib.GetBits(lpSrcDib);				// 找到DIB图像像素起始位置	
+	lSrcWidth =m_dib.GetWidth(lpSrcDib);					// 获取图像的宽度		
+	lSrcHeight = m_dib.GetHeight(lpSrcDib);					// 获取图像的高度		
+	lSrcLineBytes =m_dib.GetReqByteWidth(lSrcWidth * 8);	// 计算图像每行的字节数
+	DWORD palSize = m_dib.GetPalSize(lpSrcDib);
+
+
+	double dTmp;					// 临时变量
+	long	wid = 1, hei = 1;		// 进行傅立叶变换的宽度和高度，初始化为1		
+	int		widpor = 0, heiPor = 0;	//2的幂数	
+	unsigned char*	lpSrcUnChr;		//指向像素的指针
+	long i;							//行循环变量
+	long j;							//列循环变量	
+	while (wid < lSrcWidth)// 计算进行傅立叶变换的宽度和高度（2的整数次方）
+	{
+		wid *= 2;
+		widpor++;
+	}
+	while (hei < lSrcHeight)
+	{
+		hei *= 2;
+		heiPor++;
+	}
+	CplexNum *pTd = new CplexNum[sizeof(CplexNum)*wid * hei];// 分配内存
+	CplexNum *pFd = new CplexNum[sizeof(CplexNum)*wid * hei];
+
+	// 初始化
+	// 图像数据的宽和高不一定是2的整数次幂，所以pCTData
+	// 有一部分数据需要补0
+	for (i = 0; i < hei; i++)
+	{
+		for (j = 0; j < wid; j++)
+		{
+			pTd[i*wid + j].re = 0;
+			pTd[i*wid + j].im = 0;
+		}
+	}
+	// 把图像数据传给pCTData
+	for (i = 0; i < lSrcHeight; i++)
+	{
+		for (j = 0; j < lSrcWidth; j++)
+		{
+			lpSrcUnChr = (unsigned char*)lpSrcStartBits + lSrcLineBytes*(lSrcHeight - 1 - i) + j;
+			pTd[i*wid + j].re = *lpSrcUnChr;//complex<double>(unchValue,0);
+			pTd[i*wid + j].im = 0;
+		}
+	}
+	Fourier(pTd, lSrcWidth, lSrcHeight, pFd);
+
+	LPSTR	lpDstDib;		//指向临时图像的指针
+	LPSTR	lpDstStartBits;	//指向临时图像对应像素的指针 
+	m_hDIBAfter= (HGLOBAL) ::GlobalAlloc(GHND, lSrcLineBytes * lSrcHeight + *(LPDWORD)lpSrcDib + palSize);// 分配内存，以保存新DIB		
+	if (m_hDIBAfter == NULL)// 判断是否是有效的DIB对象
+	{
+		MessageBox(L"分配内存失败");
+		return;// 不是，则返回
+	}
+	lpDstDib = (char *)::GlobalLock((HGLOBAL)m_hDIBAfter);// 锁定内存		
+	memcpy(lpDstDib, lpSrcDib, *(LPDWORD)lpSrcDib + palSize);// 复制DIB信息头和调色板		
+	lpDstStartBits = lpDstDib + *(LPDWORD)lpDstDib+ palSize;// 求像素起始位置,作用如同::FindDIBBits(gCo.lpSrcDib)，这里尝试使用了这种方法，以避免对全局函数的调用
+	for (i = 0; i < lSrcHeight; i++)
+	{
+		for (j = 0; j < lSrcWidth; j++)
+		{
+			dTmp = pFd[i * wid + j].re* pFd[i * wid + j].re
+				+ pFd[i * wid + j].im* pFd[i * wid + j].im;
+			dTmp = sqrt(dTmp);
+
+			// 为了显示，需要对幅度的大小进行伸缩
+			dTmp /= 100;
+			// 限制图像数据的大小
+			//			dTmp = min(dTmp, 255) ;
+			lpDstStartBits[i*lSrcLineBytes + j] = (unsigned char)(int)dTmp;
+		}
+	}
+	delete pTd;// 释放内存
+	delete pFd;
+	SetDib(m_hDIBAfter, m_palDIBAfter);				           // 更新DIB大小和调色板		
+	Invalidate();
+	::GlobalUnlock((HGLOBAL)m_hDIB);  // 解除锁定
+	EndWaitCursor();
+}
+
+
+void CDigitalPicProcessingView::OnCosTran()
+{
 }

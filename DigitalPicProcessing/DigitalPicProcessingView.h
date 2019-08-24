@@ -55,6 +55,8 @@ public:
 	afx_msg void OnMirrorV();
 	afx_msg void OnTranspose();
 	afx_msg void OnZoom();
+	afx_msg void OnFourier();
+	afx_msg void OnCosTran();
 };
 
 #ifndef _DEBUG  // DigitalPicProcessingView.cpp 中的调试版本

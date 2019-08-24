@@ -716,6 +716,7 @@ HGLOBAL  Zoom(LPSTR lpSrcDib, LPSTR lpSrcStartBits,long lWidth, long lHeight,
 	return hDIB;
 }
 
+
 /*************************************************************************
 * 函数名称：FastFourierTran(CplexNum * pTd, CplexNum* pFd, int power)
 * 函数参数:
@@ -837,12 +838,12 @@ void  Fourier(CplexNum * pTd, int lWidth, int lHeight, CplexNum * pFd)
 	int 	hei=1;
 	int		widpor=0,heiPor=0;//2的幂数
 
-	while(wid * 2 <= lWidth)// 计算进行付立叶变换的宽度和高度（2的整数次方）
+	while(wid < lWidth)// 计算进行付立叶变换的宽度和高度（2的整数次方）
 	{
 		wid *= 2;
 		widpor++;
 	}	
-	while(hei * 2 <= lHeight)
+	while(hei < lHeight)
 	{
 		hei *= 2;
 		heiPor++;

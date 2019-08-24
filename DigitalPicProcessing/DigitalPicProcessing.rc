@@ -136,6 +136,15 @@ BEGIN
             MENUITEM "图像缩放",                        ID_32778
         END
     END
+    POPUP "图像正交变换"
+    BEGIN
+        POPUP "正交变换"
+        BEGIN
+            MENUITEM "离散傅里叶变换",                     ID_32780
+            MENUITEM "离散余弦变换",                      ID_32782
+        END
+        MENUITEM "特征变换",                        ID_32781
+    END
     POPUP "帮助(&H)"
     BEGIN
         MENUITEM "关于 DigitalPicProcessing(&A)...", ID_APP_ABOUT
