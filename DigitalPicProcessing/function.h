@@ -999,7 +999,7 @@ void  DisFCosTran(double *pTd, double *pFd, int power)
 * 函数类型:BOOL
 * 函数功能: 用来对图像进行离散余弦变换
 ************************************************************************/
-BOOL  CosTran(LPSTR lpSrcStartBits, long lWidth, long lHeight,long lLineBytes)
+HGLOBAL  CosTran(LPSTR lpSrcStartBits, long lWidth, long lHeight,long lLineBytes, DWORD palSize,LPSTR lpSrcDib)
 {		
 	unsigned char*	lpSrcUnChr;	//指向像素的指针
 	long i;                 //行循环变量
@@ -1007,17 +1007,31 @@ BOOL  CosTran(LPSTR lpSrcStartBits, long lWidth, long lHeight,long lLineBytes)
 	long	wid=1,hei=1;// 进行付立叶变换的宽度和高度，初始化为1
 	double	dTemp;// 中间变量	
 	int		widpor=0,heiPor=0;//2的幂数
+	HGLOBAL m_hDib;
+	LPSTR lpDstDib;
+	LPSTR lpDstStartBits;
+	unsigned char*	lpDstUnChr;
 
-	while(wid * 2 <= lWidth)// 计算进行离散余弦变换的宽度和高度（2的整数次方）
+	while(wid < lWidth)// 计算进行离散余弦变换的宽度和高度（2的整数次方）
 	{
 		wid *= 2;
 		widpor++;
 	}	
-	while(hei * 2 <= lHeight)
+	while(hei  < lHeight)
 	{
 		hei *= 2;
 		heiPor++;
-	}		
+	}
+	m_hDib = (HGLOBAL) ::GlobalAlloc(GHND, wid * hei + *(LPDWORD)lpSrcDib + palSize);// 分配内存，以保存新DIB		
+	if (m_hDib == NULL)// 判断是否是有效的DIB对象
+	{
+		return NULL;// 不是，则返回
+	}
+	lpDstDib = (char *)::GlobalLock((HGLOBAL)m_hDib);// 锁定内存		
+	memcpy(lpDstDib, lpSrcDib, *(LPDWORD)lpSrcDib + palSize);// 复制DIB信息头和调色板		
+	lpDstStartBits = lpDstDib + *(LPDWORD)lpDstDib + palSize;
+
+
 	double *pTd= new double[wid * hei];// 分配内存
 	double *pFd = new double[wid * hei];		
 	for(i = 0; i < hei; i++)// 行
@@ -1025,7 +1039,7 @@ BOOL  CosTran(LPSTR lpSrcStartBits, long lWidth, long lHeight,long lLineBytes)
 		for(j = 0; j < wid; j++)// 列
 		{
 			// 指向DIB第i行，第j个像素的指针
-			lpSrcUnChr= (unsigned char*)lpSrcStartBits + lLineBytes * (lHeight- 1 - i) + j;						
+			lpSrcUnChr= (unsigned char*)lpSrcStartBits + wid * (hei - 1 - i) + j;
 			pTd[j + i * wid] = *(lpSrcUnChr);// 给时域赋值
 		}
 	}	
@@ -1056,13 +1070,13 @@ BOOL  CosTran(LPSTR lpSrcStartBits, long lWidth, long lHeight,long lLineBytes)
 				dTemp = 255;
 			}			
 			// 指向DIB第y行，第x个像素的指针
-			lpSrcUnChr= (unsigned char*)lpSrcStartBits + lLineBytes * (lHeight- 1 - i) + j;						
-			* (lpSrcUnChr) = (BYTE)(dTemp);// 更新源图像
+			lpDstUnChr = (unsigned char*)lpDstStartBits + wid * (hei - 1 - i) + j;
+			* (lpDstUnChr) = (BYTE)(dTemp);// 更新源图像
 		}
 	}		
 	delete pTd;// 释放内存
 	delete pFd;	
-	return TRUE;
+	return m_hDib;
 }
 
 /*************************************************************************

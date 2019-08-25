@@ -646,4 +646,39 @@ void CDigitalPicProcessingView::OnFourier()
 
 void CDigitalPicProcessingView::OnCosTran()
 {
+	if (m_hDIB == NULL)
+	{
+		MessageBox(L"请选择图片");
+		return;
+	}
+	long	lSrcLineBytes;		//图像每行的字节数
+	long	lSrcWidth;			//图像的宽度和高度
+	long	lSrcHeight;
+	LPSTR	lpSrcDib;			//指向源图像的指针	
+	LPSTR	lpSrcStartBits;		//指向源像素的指针
+	lpSrcDib = (LPSTR) ::GlobalLock((HGLOBAL)m_hDIB);// 锁定DIB
+	if (m_dib.GetColorNum(lpSrcDib) != 256)// 判断是否是8-bpp位图
+	{
+		AfxMessageBox(_T("对不起，不是256色位图！"));// 警告				
+		::GlobalUnlock((HGLOBAL)m_hDIB);// 解除锁定		
+		return;									//返回
+	}
+	lpSrcStartBits = m_dib.GetBits(lpSrcDib);				// 找到DIB图像像素起始位置	
+	lSrcWidth =m_dib.GetWidth(lpSrcDib);					// 获取图像的宽度		
+	lSrcHeight = m_dib.GetHeight(lpSrcDib);					// 获取图像的高度		
+	lSrcLineBytes =m_dib.GetReqByteWidth(lSrcWidth * 8);	// 计算图像每行的字节数
+	DWORD palSize = m_dib.GetPalSize(lpSrcDib);
+	BeginWaitCursor();
+	m_hDIBAfter = CosTran(lpSrcStartBits, lSrcWidth, lSrcHeight, lSrcLineBytes, palSize, lpSrcDib);
+	if (m_hDIBAfter != NULL)
+	{
+		SetDib(m_hDIBAfter, m_palDIBAfter);				           // 更新DIB大小和调色板		
+		Invalidate();
+	}
+	else
+	{
+		AfxMessageBox(_T("分配内存失败！"));
+	}
+	::GlobalUnlock((HGLOBAL)m_hDIB);  // 解除锁定
+	EndWaitCursor();
 }
